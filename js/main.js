@@ -5,8 +5,9 @@
 (function ($) {
   "use strict";
 
-  var CONFIG = window.CONFIG || { to: "You", from: "", song: "", fireworks: false, message: [] };
+  var CONFIG = window.CONFIG || { to: "You", from: "", song: "", fireworks: false, message: [], photos: [] };
   var BALLOON_COLORS = ["#F2B300", "#0719D4", "#D14D39", "#8FAD00", "#8377E4", "#99C96A", "#20CFB4"];
+  var FX = window.FX || { sound: {}, burst: function () {}, hearts: function () {}, smoke: function () {}, popBalloon: function () {} };
 
   /* ---- helpers ---------------------------------------------------------- */
 
@@ -16,10 +17,17 @@
     });
   }
 
-  // Escape a message line, then substitute the {name} / {from} tokens.
   function fill(line) {
     return esc(line).replace(/\{name\}/g, esc(CONFIG.to)).replace(/\{from\}/g, esc(CONFIG.from));
   }
+
+  function ordinal(n) {
+    n = parseInt(n, 10);
+    var s = ["th", "st", "nd", "rd"], v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+  }
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
 
   /* ---- build the page from CONFIG -------------------------------------- */
 
@@ -45,6 +53,17 @@
     var story = "";
     $.each(CONFIG.message || [], function (i, line) { story += "<p>" + fill(line) + "</p>"; });
     $(".message .message-body").html(story);
+
+    // The big age heading.
+    if (CONFIG.age) {
+      $("#wish-title .line1").text("Happy");
+      $("#wish-title .num").text(ordinal(CONFIG.age));
+      $("#wish-title .line2").text("Birthday, " + CONFIG.to + " 🎉");
+    } else {
+      $("#wish-title .line1").text("Happy Birthday");
+      $("#wish-title .num").hide();
+      $("#wish-title .line2").text(CONFIG.to + " 🎉");
+    }
   }
 
   /* ---- the reveal animation -------------------------------------------- */
@@ -61,15 +80,125 @@
     var $lines = $(".message p");
     var i = 0;
     (function next() {
-      if (i >= $lines.length) { $(".cake").fadeIn("fast"); return; }
+      if (i >= $lines.length) { $(".cake").fadeIn("fast"); afterStory(); return; }
       $lines.eq(i).fadeIn("slow", function () {
         window.setTimeout(function () { i++; next(); }, 1300);
       });
     })();
   }
 
+  function afterStory() {
+    if (CONFIG.photos && CONFIG.photos.length) { $("#memories").fadeIn("slow"); }
+    $("#share").fadeIn("slow");
+  }
+
+  /* ---- optional countdown ---------------------------------------------- */
+
+  function setupCountdown() {
+    if (!CONFIG.date) { return; }
+    var target = Date.parse(CONFIG.date);
+    if (isNaN(target) || target <= Date.now()) { return; }
+
+    var el = document.getElementById("countdown");
+    if (!el) { return; }
+    el.classList.add("show");
+
+    var cells = {
+      d: el.querySelector(".cd-d"), h: el.querySelector(".cd-h"),
+      m: el.querySelector(".cd-m"), s: el.querySelector(".cd-s")
+    };
+    var heading = el.querySelector("h1");
+
+    function tick() {
+      var diff = target - Date.now();
+      if (diff <= 0) {
+        heading.textContent = "It's time! 🎉";
+        window.clearInterval(timer);
+        return;
+      }
+      var s = Math.floor(diff / 1000);
+      var d = Math.floor(s / 86400); s %= 86400;
+      var h = Math.floor(s / 3600); s %= 3600;
+      var m = Math.floor(s / 60); s %= 60;
+      cells.d.textContent = d;
+      cells.h.textContent = pad(h);
+      cells.m.textContent = pad(m);
+      cells.s.textContent = pad(s);
+    }
+
+    tick();
+    var timer = window.setInterval(tick, 1000);
+
+    $(el).find(".cd-skip, .cd-continue").on("click", function () {
+      window.clearInterval(timer);
+      el.classList.remove("show");
+    });
+  }
+
+  /* ---- photo slideshow -------------------------------------------------- */
+
+  function setupSlideshow() {
+    var photos = CONFIG.photos || [];
+    if (!photos.length) { return; }
+
+    var frame = document.querySelector(".slide-frame");
+    var dots = document.querySelector(".slide-dots");
+    if (!frame || !dots) { return; }
+
+    $.each(photos, function (i, src) {
+      $("<img>").attr({ src: src, alt: "Memory " + (i + 1) }).toggleClass("active", i === 0).appendTo(frame);
+      $("<i>").toggleClass("on", i === 0).appendTo(dots);
+    });
+
+    var idx = 0, timer = null;
+    var $imgs = $(frame).find("img"), $dots = $(dots).find("i");
+
+    function go(n) {
+      idx = (n + photos.length) % photos.length;
+      $imgs.removeClass("active").eq(idx).addClass("active");
+      $dots.removeClass("on").eq(idx).addClass("on");
+    }
+    function startAuto() { stopAuto(); timer = window.setInterval(function () { go(idx + 1); }, 4500); }
+    function stopAuto() { if (timer) { window.clearInterval(timer); } }
+
+    $("#memories").on("click", function () { document.getElementById("slideshow").classList.add("show"); go(0); startAuto(); });
+    $(".slide-next").on("click", function () { go(idx + 1); startAuto(); });
+    $(".slide-prev").on("click", function () { go(idx - 1); startAuto(); });
+    $(".slide-close").on("click", function () { document.getElementById("slideshow").classList.remove("show"); stopAuto(); });
+  }
+
+  /* ---- share ------------------------------------------------------------ */
+
+  function setupShare() {
+    var text = (CONFIG.shareText || "Happy Birthday {name} 🎂")
+      .replace(/\{name\}/g, CONFIG.to).replace(/\{from\}/g, CONFIG.from);
+
+    $("#share").on("click", function () {
+      var url = window.location.href;
+      if (navigator.share) {
+        navigator.share({ title: "Happy Birthday " + CONFIG.to, text: text, url: url }).catch(function () {});
+      } else {
+        window.open("https://wa.me/?text=" + encodeURIComponent(text + " " + url), "_blank");
+      }
+    });
+  }
+
+  /* ---- boot ------------------------------------------------------------- */
+
   $(function () {
     applyConfig();
+    setupCountdown();
+    setupSlideshow();
+    setupShare();
+
+    // tap a balloon to pop it
+    $(document).on("click", ".balloons", function () { FX.popBalloon(this); });
+
+    // theme toggle
+    $("#theme").on("click", function () {
+      var night = document.body.classList.toggle("theme-night");
+      this.textContent = night ? "☀️" : "🌙";
+    });
 
     $(window).on("load", function () {
       $(".loading").fadeOut("fast");
@@ -102,6 +231,7 @@
 
     $("#bannar_coming").on("click", function () {
       $(".bannar").addClass("bannar-come");
+      FX.sound.whoosh();
       $(this).fadeOut("slow").delay(6000).promise().done(function () { $("#balloons_flying").fadeIn("slow"); });
     });
 
@@ -120,7 +250,23 @@
 
     $("#light_candle").on("click", function () {
       $(".fuego").fadeIn("slow");
-      $(this).fadeOut("slow").promise().done(function () { $("#wish_message").fadeIn("slow"); });
+      FX.sound.chime();
+      $(this).fadeOut("slow").promise().done(function () { $("#blow_candle").fadeIn("slow"); });
+    });
+
+    // Blow the candle: flames out, smoke, confetti + fireworks + hearts
+    $("#blow_candle").on("click", function () {
+      var v = document.querySelector(".velas");
+      if (v && FX.smoke) { var r = v.getBoundingClientRect(); FX.smoke(r.left + r.width / 2, r.top); }
+      $(".fuego").fadeOut("fast");
+      FX.sound.tada();
+      var cx = window.innerWidth / 2, cy = window.innerHeight / 2;
+      FX.burst(cx, cy - 60, 170);
+      window.setTimeout(function () { FX.burst(cx - 230, cy + 20, 90); }, 220);
+      window.setTimeout(function () { FX.burst(cx + 230, cy + 20, 90); }, 420);
+      FX.hearts();
+      if (CONFIG.fireworks && typeof window.startFireworks === "function") { window.startFireworks(); }
+      $(this).fadeOut("slow").delay(2600).promise().done(function () { $("#wish_message").fadeIn("slow"); });
     });
 
     $("#wish_message").on("click", function () {
@@ -134,16 +280,25 @@
       }
       $(".balloons").css("opacity", "0.9");
       $(".balloons h2").fadeIn(3000);
-      if (CONFIG.fireworks && typeof window.startFireworks === "function") { window.startFireworks(); }
-      $(this).fadeOut("slow").delay(3000).promise().done(function () { $("#story").fadeIn("slow"); });
+      $(".cake").fadeOut("slow");        // clear the stage for the title + gift
+      $("#wish-title").addClass("show");
+      FX.sound.chime();
+      $(this).fadeOut("slow").delay(1600).promise().done(function () { $("#gift").addClass("show"); });
     });
 
-    $("#story").on("click", function () {
-      $(this).fadeOut("slow");
-      $(".cake").fadeOut("fast").promise().done(function () {
+    // Open the gift -> reveal the message
+    $("#gift").on("click", function () {
+      var $g = $(this);
+      $g.addClass("open");
+      FX.sound.tada();
+      var r = this.getBoundingClientRect();
+      FX.burst(r.left + r.width / 2, r.top + r.height / 2, 160);
+      window.setTimeout(function () {
+        $g.fadeOut("fast", function () { $g.removeClass("show"); });
+        $("#wish-title").fadeOut("slow");
         $(".message").fadeIn("slow");
         playStory();
-      });
+      }, 750);
     });
   });
 })(jQuery);

@@ -19,13 +19,31 @@
     to: "Prachi",
     from: "Ankit",
 
+    // ---- the age, shown as "Happy 21st Birthday". null = no number -----
+    age: null,
+
+    // ---- optional countdown. An ISO date in the FUTURE shows a live
+    //      countdown screen before the reveal; null = skip it ------------
+    date: null, // e.g. "2026-12-31T00:00:00"
+
     // ---- the song played by the "Play Music" button --------------------
     song: "hbd.mp3",
 
-    // ---- celebration fireworks on the final reveal ---------------------
-    fireworks: true,
+    // ---- effects (turn any off with false) -----------------------------
+    fireworks: true, // canvas fireworks on the finale
+    confetti: true,  // confetti burst on the candle blow-out / gift
+    hearts: true,    // floating hearts in the background
+    sound: true,     // synthesised sound effects (no files needed)
 
-    // ---- the "A message for you" story, one line per paragraph ---------
+    // ---- photo slideshow. Add image paths here, e.g.
+    //      photos: ["photos/1.jpg", "photos/2.jpg"]
+    //      (drop the files into a photos/ folder). [] = no slideshow ----
+    photos: [],
+
+    // ---- text used by the Share button ---------------------------------
+    shareText: "Wish {name} a very Happy Birthday 🎂",
+
+    // ---- the "message" story, one line per paragraph -------------------
     message: [
       "Today is... 😊",
       "as beautiful as other days 🌞",
@@ -82,8 +100,15 @@
   window.CONFIG = {
     to: qs.get("to") || DEFAULTS.to,
     from: qs.get("from") || DEFAULTS.from,
+    age: DEFAULTS.age,
+    date: DEFAULTS.date,
     song: qs.get("song") || DEFAULTS.song,
     fireworks: DEFAULTS.fireworks,
+    confetti: DEFAULTS.confetti,
+    hearts: DEFAULTS.hearts,
+    sound: DEFAULTS.sound,
+    photos: DEFAULTS.photos,
+    shareText: DEFAULTS.shareText,
     message: DEFAULTS.message
   };
 })();

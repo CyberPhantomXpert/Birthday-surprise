@@ -28,11 +28,17 @@
   <link rel="stylesheet" href="stylesheet.css">
   <link rel="stylesheet" href="loading.css">
   <link rel="stylesheet" href="css/cake.css">
+  <link rel="stylesheet" href="css/extras.css">
 </head>
 
 <body>
   <div class="loading"></div>
   <canvas id="canvas" aria-hidden="true"></canvas>
+  <canvas id="fx" aria-hidden="true"></canvas>
+
+  <div class="topbar">
+    <button class="icon-btn" id="theme" aria-label="Switch theme" title="Switch theme">🌙</button>
+  </div>
 
   <audio class="song" id="song" loop preload="auto">
     <source src="hbd.mp3" type="audio/mpeg">
@@ -43,6 +49,21 @@
   <div id="balloon-stage"></div>
 
   <img src="Balloon-Border.png" width="100%" class="balloon-border" alt="">
+
+  <!-- Big age heading (revealed at the wish stage) -->
+  <div class="wish-title" id="wish-title" aria-hidden="true">
+    <span class="line line1"></span>
+    <span class="num"></span>
+    <span class="line line2"></span>
+  </div>
+
+  <!-- Gift box (tap to open the message) -->
+  <button class="gift" id="gift" aria-label="Open your gift">
+    <span class="box"></span>
+    <span class="lid"></span>
+    <span class="bow"></span>
+    <span class="hint">Tap to open 🎁</span>
+  </button>
 
   <div class="container">
 
@@ -90,8 +111,10 @@
           <button class="btn btn-primary" id="balloons_flying">Fly With Balloons 🎈</button>
           <button class="btn btn-primary" id="cake_fadein">Most Delicious Cake 🎂</button>
           <button class="btn btn-primary" id="light_candle">Light the Candle 🕯️</button>
+          <button class="btn btn-primary" id="blow_candle">Blow the Candle 💨</button>
           <button class="btn btn-primary" id="wish_message">Happy Birthday 🥳</button>
-          <button class="btn btn-primary" id="story">A message ✉️ for you</button>
+          <button class="btn btn-primary" id="memories">Our memories 📸</button>
+          <button class="btn btn-primary" id="share">Share the wish 💌</button>
         </div>
       </div>
     </div>
@@ -100,10 +123,35 @@
 
   <footer class="credit">Made with ❤ by <span class="js-from-name"></span></footer>
 
+  <!-- Optional countdown (shown only if config.date is in the future) -->
+  <div id="countdown" aria-hidden="true">
+    <h1>Counting down to the big day</h1>
+    <p class="cd-sub">The celebration unlocks on the day 🎂</p>
+    <div class="cd-clock">
+      <div class="cd-cell"><div class="cd-num cd-d">0</div><div class="cd-lbl">Days</div></div>
+      <div class="cd-cell"><div class="cd-num cd-h">00</div><div class="cd-lbl">Hours</div></div>
+      <div class="cd-cell"><div class="cd-num cd-m">00</div><div class="cd-lbl">Minutes</div></div>
+      <div class="cd-cell"><div class="cd-num cd-s">00</div><div class="cd-lbl">Seconds</div></div>
+    </div>
+    <button class="cd-skip">Skip to the surprise →</button>
+  </div>
+
+  <!-- Optional photo slideshow (shown only if config.photos is not empty) -->
+  <div id="slideshow" aria-hidden="true">
+    <button class="slide-close" aria-label="Close">✕</button>
+    <div class="slide-frame"></div>
+    <div class="slide-controls">
+      <button class="slide-btn slide-prev">‹ Prev</button>
+      <div class="slide-dots"></div>
+      <button class="slide-btn slide-next">Next ›</button>
+    </div>
+  </div>
+
   <script src="js/config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"
           integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
           crossorigin="anonymous"></script>
+  <script src="js/effects.js"></script>
   <script src="js/main.js"></script>
   <script src="js/fireworks.js"></script>
 </body>
